@@ -1,0 +1,62 @@
+services:
+  # Implementation Testing Service: Runs full pytest suite
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nifty-scalping-backtester:latest
+    container_name: nifty_backtest_tests
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONIOENCODING=utf-8
+    env_file:
+      - .env
+    command: ["pytest", "tests/", "-v"]
+
+  # Gemini Agent Verification: Tests agent analysis inside container
+  agent-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nifty-scalping-backtester:latest
+    container_name: nifty_agent_test
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONIOENCODING=utf-8
+    env_file:
+      - .env
+    command: ["python", "-c", "from agent.strategy_agent import StrategyAgent; a = StrategyAgent(); print(a.chat('Docker container testing: explain 11-14 sweet spot briefly.'))"]
+
+  # Interactive Streamlit Web UI
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nifty-scalping-backtester:latest
+    container_name: nifty_backtest_ui
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONIOENCODING=utf-8
+    env_file:
+      - .env
+    command: ["streamlit", "run", "ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+  # FastMCP Server Service
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nifty-scalping-backtester:latest
+    container_name: nifty_backtest_mcp
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONIOENCODING=utf-8
+    env_file:
+      - .env
+    command: ["python", "mcp_server/server.py"]
